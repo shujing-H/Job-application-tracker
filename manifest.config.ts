@@ -35,6 +35,6 @@ export default defineManifest({
     }
   ],
   icons: {
-    128: 'icon.svg'
+    128: 'icon128.png'
   }
 });

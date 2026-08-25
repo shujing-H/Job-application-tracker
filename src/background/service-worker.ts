@@ -47,7 +47,7 @@ async function notifySummary(day: 3 | 6, drafts: JobDraft[]): Promise<void> {
   const names = drafts.slice(0, 3).map((draft) => `${draft.role}${draft.company ? ` at ${draft.company}` : ''}`);
   await chrome.notifications.create(`draft-day-${day}-${Date.now()}`, {
     type: 'basic',
-    iconUrl: 'icon.svg',
+    iconUrl: 'icon128.png',
     title,
     message: `Day ${day}: ${names.join('; ')}${drafts.length > 3 ? ` and ${drafts.length - 3} more` : ''}`,
   });
