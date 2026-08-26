@@ -5,10 +5,23 @@ export const SHEET_COLUMNS = [
   'Applied Date',
   'Source',
   'Status',
+  'Current Status',
   'Referral',
   'Job URL',
   'JD Snapshot',
   'Notes',
+] as const;
+
+export const CURRENT_STATUS_OPTIONS = [
+  'Applied',
+  'Referral requested',
+  'Interview – Round 1',
+  'Interview – Round 2',
+  'Interview – Round 3',
+  'Interview – Final Round',
+  'Rejected',
+  'Offer',
+  'Withdrawn',
 ] as const;
 
 export type JobSource = 'LinkedIn' | 'Handshake' | 'Workday' | 'Greenhouse';
@@ -44,6 +57,7 @@ export interface ConfirmedApplication extends CapturedJob {
   fingerprint: string;
   appliedDate: string;
   status: 'Applied' | 'Referral requested';
+  currentStatus: typeof CURRENT_STATUS_OPTIONS[number];
   referral: boolean;
   notes: string;
   confirmation: 'detected' | 'manual';

@@ -1,5 +1,5 @@
 import { canonicalizeJobUrl, jobFingerprint } from '../domain/lifecycle';
-import { SHEET_COLUMNS, type ConfirmedApplication } from '../domain/model';
+import { CURRENT_STATUS_OPTIONS, SHEET_COLUMNS, type ConfirmedApplication } from '../domain/model';
 
 const API = 'https://sheets.googleapis.com/v4/spreadsheets';
 export const DEFAULT_WORKSHEET = 'Applications';
@@ -39,6 +39,25 @@ function cell(value: string, bold = false): object {
   };
 }
 
+async function configureStatusDropdown(token: string, spreadsheetId: string, worksheetId: number): Promise<void> {
+  await request(token, `${API}/${encodeURIComponent(spreadsheetId)}:batchUpdate`, {
+    method: 'POST',
+    body: JSON.stringify({
+      requests: [{
+        repeatCell: {
+          range: { sheetId: worksheetId, startRowIndex: 1, startColumnIndex: 6, endColumnIndex: 7 },
+          cell: { dataValidation: {
+            condition: { type: 'ONE_OF_LIST', values: CURRENT_STATUS_OPTIONS.map((value) => ({ userEnteredValue: value })) },
+            strict: true,
+            showCustomUi: true,
+          } },
+          fields: 'dataValidation',
+        },
+      }],
+    }),
+  });
+}
+
 export async function createJobTrackerSheet(token: string): Promise<{
   spreadsheetId: string;
   spreadsheetUrl: string;
@@ -61,6 +80,7 @@ export async function createJobTrackerSheet(token: string): Promise<{
   });
   const worksheetId = result.sheets?.find(({ properties }) => properties?.title === DEFAULT_WORKSHEET)?.properties?.sheetId;
   if (worksheetId === undefined) throw new SheetsApiError(500, 'Google created the spreadsheet without the Applications worksheet.');
+  await configureStatusDropdown(token, result.spreadsheetId, worksheetId);
   return {
     spreadsheetId: result.spreadsheetId,
     spreadsheetUrl: result.spreadsheetUrl ?? `https://docs.google.com/spreadsheets/d/${result.spreadsheetId}/edit`,
@@ -85,28 +105,47 @@ function columnsMatch(values: unknown[] | undefined): boolean {
   return SHEET_COLUMNS.every((column, index) => values?.[index] === column) && values?.length === SHEET_COLUMNS.length;
 }
 
-const LEGACY_SHEET_COLUMNS = SHEET_COLUMNS.filter((column) => column !== 'Referral');
+const REFERRAL_SHEET_COLUMNS = SHEET_COLUMNS.filter((column) => column !== 'Current Status');
+const PRE_REFERRAL_SHEET_COLUMNS = SHEET_COLUMNS.filter(
+  (column) => column !== 'Current Status' && column !== 'Referral',
+);
 
-function legacyColumnsMatch(values: unknown[] | undefined): boolean {
-  return LEGACY_SHEET_COLUMNS.every((column, index) => values?.[index] === column)
-    && values?.length === LEGACY_SHEET_COLUMNS.length;
+function referralColumnsMatch(values: unknown[] | undefined): boolean {
+  return REFERRAL_SHEET_COLUMNS.every((column, index) => values?.[index] === column)
+    && values?.length === REFERRAL_SHEET_COLUMNS.length;
+}
+
+function preReferralColumnsMatch(values: unknown[] | undefined): boolean {
+  return PRE_REFERRAL_SHEET_COLUMNS.every((column, index) => values?.[index] === column)
+    && values?.length === PRE_REFERRAL_SHEET_COLUMNS.length;
 }
 
 async function ensureSheetColumns(
   token: string,
   spreadsheetId: string,
   worksheetTitle: string,
+  worksheetId: number,
   values: unknown[] | undefined,
 ): Promise<void> {
   if (columnsMatch(values)) return;
-  if (!legacyColumnsMatch(values)) {
+  const columnsToInsert = referralColumnsMatch(values) ? 1 : preReferralColumnsMatch(values) ? 2 : 0;
+  if (!columnsToInsert) {
     throw new Error('The connected sheet columns changed. Reconnect a compatible sheet.');
   }
   await request(
     token,
-    `${API}/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(`${quoteSheetTitle(worksheetTitle)}!A1:J1`)}?valueInputOption=RAW`,
+    `${API}/${encodeURIComponent(spreadsheetId)}:batchUpdate`,
+    { method: 'POST', body: JSON.stringify({ requests: [{ insertDimension: {
+      range: { sheetId: worksheetId, dimension: 'COLUMNS', startIndex: 6, endIndex: 6 + columnsToInsert },
+      inheritFromBefore: true,
+    } }] }) },
+  );
+  await request(
+    token,
+    `${API}/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(`${quoteSheetTitle(worksheetTitle)}!A1:K1`)}?valueInputOption=RAW`,
     { method: 'PUT', body: JSON.stringify({ values: [SHEET_COLUMNS] }) },
   );
+  await configureStatusDropdown(token, spreadsheetId, worksheetId);
 }
 
 export async function validateCompatibleSheet(token: string, input: string): Promise<{
@@ -126,10 +165,10 @@ export async function validateCompatibleSheet(token: string, input: string): Pro
     if (!title || worksheetId === undefined) continue;
     const header = await request<{ values?: unknown[][] }>(
       token,
-      `${API}/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(`${quoteSheetTitle(title)}!A1:J1`)}`,
+      `${API}/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(`${quoteSheetTitle(title)}!A1:K1`)}`,
     );
     try {
-      await ensureSheetColumns(token, spreadsheetId, title, header.values?.[0]);
+      await ensureSheetColumns(token, spreadsheetId, title, worksheetId, header.values?.[0]);
     } catch (error) {
       if (!(error instanceof Error) || !error.message.includes('columns changed')) throw error;
       continue;
@@ -152,6 +191,7 @@ export function applicationRow(application: ConfirmedApplication): string[] {
     application.appliedDate,
     application.source,
     application.status,
+    application.currentStatus,
     application.referral ? 'Yes' : 'No',
     application.jobUrl,
     application.jdSnapshot,
@@ -159,13 +199,27 @@ export function applicationRow(application: ConfirmedApplication): string[] {
   ];
 }
 
+export async function upgradeJobTrackerSheetSchema(
+  token: string,
+  spreadsheetId: string,
+  worksheetTitle: string,
+  worksheetId: number,
+): Promise<void> {
+  const range = `${quoteSheetTitle(worksheetTitle)}!A:K`;
+  const current = await request<{ values?: unknown[][] }>(
+    token,
+    `${API}/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(range)}`,
+  );
+  await ensureSheetColumns(token, spreadsheetId, worksheetTitle, worksheetId, current.values?.[0]);
+}
+
 export function findDuplicateRow(rows: unknown[][], application: ConfirmedApplication): number | undefined {
   if (!columnsMatch(rows[0])) throw new Error('The connected sheet columns changed. Reconnect a compatible sheet.');
   for (let index = 1; index < rows.length; index += 1) {
     const row = rows[index];
-    if (typeof row?.[0] !== 'string' || typeof row?.[1] !== 'string' || typeof row?.[7] !== 'string') continue;
+    if (typeof row?.[0] !== 'string' || typeof row?.[1] !== 'string' || typeof row?.[8] !== 'string') continue;
     try {
-      const fingerprint = jobFingerprint({ company: row[0], role: row[1], jobUrl: canonicalizeJobUrl(row[7]) });
+      const fingerprint = jobFingerprint({ company: row[0], role: row[1], jobUrl: canonicalizeJobUrl(row[8]) });
       if (fingerprint === application.fingerprint) return index + 1;
     } catch {
       // A malformed hand-edited row is not a match.
@@ -181,13 +235,15 @@ export async function appendApplicationIdempotently(
   worksheetId: number,
   application: ConfirmedApplication,
 ): Promise<number | undefined> {
-  const range = `${quoteSheetTitle(worksheetTitle)}!A:J`;
+  const range = `${quoteSheetTitle(worksheetTitle)}!A:K`;
   const current = await request<{ values?: unknown[][] }>(
     token,
     `${API}/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(range)}`,
   );
-  await ensureSheetColumns(token, spreadsheetId, worksheetTitle, current.values?.[0]);
-  if (legacyColumnsMatch(current.values?.[0])) current.values![0] = [...SHEET_COLUMNS];
+  await ensureSheetColumns(token, spreadsheetId, worksheetTitle, worksheetId, current.values?.[0]);
+  if (referralColumnsMatch(current.values?.[0]) || preReferralColumnsMatch(current.values?.[0])) {
+    current.values![0] = [...SHEET_COLUMNS];
+  }
   const duplicate = findDuplicateRow(current.values ?? [], application);
   if (duplicate) return duplicate;
 

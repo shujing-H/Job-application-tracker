@@ -13,6 +13,7 @@ import {
   appendApplicationIdempotently,
   createJobTrackerSheet,
   SheetsApiError,
+  upgradeJobTrackerSheetSchema,
   validateCompatibleSheet,
 } from '../google/sheets';
 import {
@@ -195,6 +196,18 @@ async function runSync(force = false): Promise<void> {
       await chrome.storage.session.clear();
       return;
     }
+    await setSyncSummary(connection.accountId, connection.spreadsheetId, { state: 'error', message: friendlyError(error) });
+    return;
+  }
+
+  try {
+    await upgradeJobTrackerSheetSchema(
+      identity.token,
+      connection.spreadsheetId,
+      connection.worksheetTitle,
+      connection.worksheetId,
+    );
+  } catch (error) {
     await setSyncSummary(connection.accountId, connection.spreadsheetId, { state: 'error', message: friendlyError(error) });
     return;
   }

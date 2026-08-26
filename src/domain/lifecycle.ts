@@ -120,6 +120,7 @@ export function confirmDraft(
     jdSnapshot: draft.jdSnapshot,
     appliedDate: now.toISOString(),
     status: referral ? 'Referral requested' : 'Applied',
+    currentStatus: referral ? 'Referral requested' : 'Applied',
     referral,
     notes: '',
     confirmation,

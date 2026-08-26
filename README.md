@@ -6,7 +6,8 @@ A privacy-first Chrome Manifest V3 extension that keeps job-page drafts on the d
 
 - Chrome Identity OAuth for one Google account per local data boundary.
 - Creates a dedicated **Job Tracker** spreadsheet or validates a compatible sheet already authorized for this app.
-- Uses these exact columns: `Company`, `Role`, `Location`, `Applied Date`, `Source`, `Status`, `Referral`, `Job URL`, `JD Snapshot`, `Notes`.
+- Uses these exact columns: `Company`, `Role`, `Location`, `Applied Date`, `Source`, `Status`, `Current Status`, `Referral`, `Job URL`, `JD Snapshot`, `Notes`.
+- Adds an English dropdown in `Current Status`: `Applied`, `Referral requested`, `Interview – Round 1`, `Interview – Round 2`, `Interview – Round 3`, `Interview – Final Round`, `Rejected`, `Offer`, and `Withdrawn`.
 - Writes only after high-confidence success detection in the same tab, an explicit **I applied** action, or an explicit **Request referral** action.
 - Prevents local and remote duplicates with an account-scoped fingerprint and a read-before-append check.
 - Retries offline, throttled, authentication, and server failures with bounded backoff.

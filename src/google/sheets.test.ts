@@ -14,6 +14,7 @@ const application: ConfirmedApplication = {
   appliedDate: '2026-08-26T12:00:00.000Z',
   source: 'LinkedIn',
   status: 'Applied',
+  currentStatus: 'Applied',
   referral: false,
   jobUrl: 'https://example.com/jobs/1',
   jdSnapshot: 'Description',
@@ -27,7 +28,7 @@ describe('Google Sheets mapping', () => {
   it('maps the confirmed record to the tracker columns including referral state', () => {
     expect(applicationRow(application)).toEqual([
       'Acme', 'Engineer', 'New York', '2026-08-26T12:00:00.000Z', 'LinkedIn',
-      'Applied', 'No', 'https://example.com/jobs/1', 'Description', '',
+      'Applied', 'Applied', 'No', 'https://example.com/jobs/1', 'Description', '',
     ]);
     expect(applicationRow(application)).toHaveLength(SHEET_COLUMNS.length);
   });
@@ -35,7 +36,7 @@ describe('Google Sheets mapping', () => {
   it('recognizes a previously appended job despite URL tracking parameters', () => {
     const rows = [
       [...SHEET_COLUMNS],
-      ['Acme', 'Engineer', '', '', '', '', '', 'https://example.com/jobs/1?utm_source=email'],
+      ['Acme', 'Engineer', '', '', '', '', '', '', 'https://example.com/jobs/1?utm_source=email'],
     ];
     expect(findDuplicateRow(rows, application)).toBe(2);
   });
@@ -53,7 +54,7 @@ describe('Google Sheets mapping', () => {
 
   it('does not append when the fingerprint already exists remotely', async () => {
     const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(JSON.stringify({
-      values: [[...SHEET_COLUMNS], ['Acme', 'Engineer', '', '', '', '', '', 'https://example.com/jobs/1']],
+      values: [[...SHEET_COLUMNS], ['Acme', 'Engineer', '', '', '', '', '', '', 'https://example.com/jobs/1']],
     }), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
     expect(await appendApplicationIdempotently('token', 'sheet-id', 'Applications', 42, application)).toBe(2);
@@ -61,19 +62,23 @@ describe('Google Sheets mapping', () => {
     expect(fetchMock.mock.calls[0]?.[1]?.method).toBeUndefined();
   });
 
-  it('upgrades a previous nine-column Job Tracker before appending a referral record', async () => {
-    const legacyColumns = SHEET_COLUMNS.filter((column) => column !== 'Referral');
+  it('upgrades a previous referral sheet before appending a current-status record', async () => {
+    const legacyColumns = SHEET_COLUMNS.filter((column) => column !== 'Current Status');
     const fetchMock = vi.fn((_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> => Promise.reject(new Error('unmocked call')))
       .mockResolvedValueOnce(new Response(JSON.stringify({ values: [legacyColumns] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({}), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({}), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({}), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({}), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ replies: [{}, {}] }), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
     await appendApplicationIdempotently('token', 'sheet-id', 'Applications', 42, { ...application, referral: true, status: 'Referral requested' });
-    expect(fetchMock.mock.calls[1]?.[1]?.method).toBe('PUT');
-    expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))).toEqual({ values: [[...SHEET_COLUMNS]] });
-    const appendBody = JSON.parse(String(fetchMock.mock.calls[3]?.[1]?.body));
-    expect(appendBody.requests[0].appendCells.rows[0].values[6].userEnteredValue.stringValue).toBe('Yes');
+    expect(fetchMock.mock.calls[1]?.[1]?.method).toBe('POST');
+    expect(fetchMock.mock.calls[2]?.[1]?.method).toBe('PUT');
+    const dropdownBody = JSON.parse(String(fetchMock.mock.calls[3]?.[1]?.body));
+    expect(dropdownBody.requests[0].repeatCell.range.startColumnIndex).toBe(6);
+    const appendBody = JSON.parse(String(fetchMock.mock.calls[5]?.[1]?.body));
+    expect(appendBody.requests[0].appendCells.rows[0].values[7].userEnteredValue.stringValue).toBe('Yes');
   });
 
   it('atomically appends a new row and its private idempotency marker', async () => {
@@ -87,7 +92,7 @@ describe('Google Sheets mapping', () => {
     expect(fetchMock.mock.calls[1]?.[1]?.method).toBe('POST');
     const body = JSON.parse(String(fetchMock.mock.calls[2]?.[1]?.body));
     expect(body.requests[0].appendCells).toMatchObject({ sheetId: 42, fields: 'userEnteredValue' });
-    expect(body.requests[0].appendCells.rows[0].values).toHaveLength(10);
+    expect(body.requests[0].appendCells.rows[0].values).toHaveLength(11);
     expect(body.requests[1].createDeveloperMetadata.developerMetadata).toMatchObject({
       metadataKey: 'jobTrackerApplicationId',
       metadataValue: 'application-1',
