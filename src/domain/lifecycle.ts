@@ -29,10 +29,11 @@ export function jobFingerprint(job: Pick<CapturedJob, 'company' | 'role' | 'jobU
   return hash(`${job.company.trim().toLowerCase()}|${job.role.trim().toLowerCase()}|${url}`);
 }
 
-export function createDraft(job: CapturedJob, now = new Date()): JobDraft {
+export function createDraft(job: CapturedJob, ownerAccountId: string, now = new Date()): JobDraft {
   const timestamp = now.toISOString();
   return {
     ...job,
+    ownerAccountId,
     jobUrl: canonicalizeJobUrl(job.jobUrl),
     id: crypto.randomUUID(),
     fingerprint: jobFingerprint(job),
@@ -96,6 +97,7 @@ export function confirmDraft(
 ): ConfirmedApplication {
   return {
     id: crypto.randomUUID(),
+    ownerAccountId: draft.ownerAccountId,
     draftId: draft.id,
     fingerprint: draft.fingerprint,
     company: draft.company,

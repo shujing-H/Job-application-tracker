@@ -28,6 +28,7 @@ export interface ReminderState {
 
 export interface JobDraft extends CapturedJob {
   id: string;
+  ownerAccountId: string;
   fingerprint: string;
   createdAt: string;
   updatedAt: string;
@@ -37,6 +38,7 @@ export interface JobDraft extends CapturedJob {
 
 export interface ConfirmedApplication extends CapturedJob {
   id: string;
+  ownerAccountId: string;
   draftId: string;
   fingerprint: string;
   appliedDate: string;
@@ -44,7 +46,7 @@ export interface ConfirmedApplication extends CapturedJob {
   notes: string;
   confirmation: 'detected' | 'manual';
   sync: {
-    state: 'pending' | 'retrying' | 'synced';
+    state: 'pending' | 'retrying' | 'synced' | 'blocked';
     attempts: number;
     nextAttemptAt?: string;
     sheetRow?: number;
@@ -52,9 +54,30 @@ export interface ConfirmedApplication extends CapturedJob {
   };
 }
 
-export interface TrackerState {
-  drafts: Record<string, JobDraft>;
-  applications: Record<string, ConfirmedApplication>;
+export interface GoogleConnection {
+  accountId: string;
+  email: string;
+  connectedAt: string;
+  spreadsheetId?: string;
+  spreadsheetUrl?: string;
+  worksheetTitle?: string;
 }
 
-export const EMPTY_STATE: TrackerState = { drafts: {}, applications: {} };
+export interface SyncSummary {
+  state: 'disconnected' | 'needs_sheet' | 'ready' | 'syncing' | 'retrying' | 'error';
+  message?: string;
+  lastSyncedAt?: string;
+}
+
+export interface TrackerState {
+  connection?: GoogleConnection;
+  drafts: Record<string, JobDraft>;
+  applications: Record<string, ConfirmedApplication>;
+  syncSummary: SyncSummary;
+}
+
+export const EMPTY_STATE: TrackerState = {
+  drafts: {},
+  applications: {},
+  syncSummary: { state: 'disconnected' },
+};

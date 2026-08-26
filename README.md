@@ -1,51 +1,54 @@
 # Job Application Tracker
 
-A privacy-first Chrome Manifest V3 extension that captures job details into local drafts and only promotes a draft after application success is detected or the user confirms it. It never fills or submits an application.
+A privacy-first Chrome Manifest V3 extension that keeps job-page drafts on the device and writes only confirmed applications to the signed-in user's Google Sheet. It never fills or submits an application.
 
-## First milestone
+## Current milestone
 
-- React + TypeScript popup UI and an installable Vite/CRXJS development build.
-- Page extraction for LinkedIn, Handshake, Workday, and Greenhouse.
-- Local-only drafts containing company, role, location, canonical job URL, source, and full job-description snapshot.
-- Seven-day retention, grouped reminders on days 3 and 6, automatic removal on day 7, and a seven-day extension action.
-- Conservative submission-success phrase detection correlated to the same browser tab, plus explicit **I applied** confirmation.
-- A local confirmed-application outbox with fingerprints for duplicate prevention and retry metadata for the future Google Sheets sync.
+- Chrome Identity OAuth for one Google account per local data boundary.
+- Creates a dedicated **Job Tracker** spreadsheet or validates a compatible sheet already authorized for this app.
+- Uses these exact columns: `Company`, `Role`, `Location`, `Applied Date`, `Source`, `Status`, `Job URL`, `JD Snapshot`, `Notes`.
+- Writes only after high-confidence success detection in the same tab or an explicit **I applied** action.
+- Prevents local and remote duplicates with an account-scoped fingerprint and a read-before-append check.
+- Retries offline, throttled, authentication, and server failures with bounded backoff.
+- Shows disconnected, setup, syncing, retrying, blocked, and up-to-date states in the popup.
+- Clears drafts, queued rows, account identity, and sheet configuration when the Chrome Google account changes or disconnects, before a new account can see or sync them.
+- Requests only `drive.file`, the Google-recommended narrow OAuth scope for files created or opened with this app.
 
-## Privacy and permissions
+Draft capture supports LinkedIn, Handshake, Workday, and Greenhouse. Drafts expire after seven days, with grouped reminders on days 3 and 6 and a user-controlled seven-day extension.
 
-The extension requests only `storage`, `alarms`, and `notifications`, plus host access limited to the four supported job platforms. Draft and confirmed data stay in `chrome.storage.local`. No analytics, remote service, broad browsing permission, form filling, or submission capability is included.
-
-## Development
+## Development and verification
 
 ```sh
-npm install
-npm test
-npm run build
+npm ci
+npm run verify
 ```
 
-Load `dist/` from `chrome://extensions` using **Developer mode → Load unpacked**. Run `npm run dev` for iterative development.
+`npm run verify` runs the unit tests, TypeScript production build, and an audit of the generated `dist/manifest.json`. Load `dist/` from `chrome://extensions` using **Developer mode → Load unpacked**.
 
-## Architecture
+The checked-in OAuth client ID is intentionally nonfunctional. Complete [Google Cloud and OAuth setup](docs/GOOGLE_OAUTH_SETUP.md) and replace it before testing sign-in. The OAuth client ID is public configuration, not a client secret.
+
+## Data flow
 
 ```text
-job detail page
-  → site-specific content extractor
-  → service worker message boundary
-  → local draft repository
-      ├─ hourly alarm → day 3/day 6 notification or day 7 expiry
-      └─ explicit/detected success → confirmed outbox (deduplicated)
-                                       → Google Sheets adapter (next milestone)
+supported job page
+  → site-specific extractor
+  → account-bound local draft (7-day retention)
+  → confirmed success only
+  → account-bound local outbox
+  → identity check + idempotency read
+  → that account's connected Google Sheet
 ```
 
-The Google Sheets adapter will map confirmed records to these exact English columns:
+The access token stays in Chrome's Identity API cache and is never written to extension storage. See [Privacy and security review](docs/PRIVACY.md) for the full data inventory and account-switch analysis.
 
-`Company`, `Role`, `Location`, `Applied Date`, `Source`, `Status`, `Job URL`, `JD Snapshot`, `Notes`
+## Important `drive.file` behavior
 
-The outbox is deliberately local in this milestone. Its fingerprint and sync state are the seam for idempotent Sheets writes, offline retry, and duplicate prevention without prematurely transmitting drafts.
+The narrow scope can create a new sheet and reopen sheets previously authorized for this OAuth app. It intentionally cannot browse or silently access arbitrary spreadsheets in Drive. If a pasted sheet was never authorized for this app, the popup explains the limitation and offers creation of a new dedicated Job Tracker. This avoids the sensitive all-spreadsheets scope.
 
-## Product constraints
+## Project constraints
 
 - Drafts never reach Google Sheets.
-- A confirmed row is created only after a high-confidence success signal or a user action.
+- A confirmed row is created only after a conservative success signal or explicit user action.
 - The extension observes; it never fills inputs or clicks submission controls.
+- No analytics, application backend, form access, broad browsing permission, or remote-hosted code is included.
 - Repository and development artifacts must remain private.

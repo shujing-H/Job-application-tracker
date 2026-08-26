@@ -16,7 +16,7 @@ describe('draft lifecycle', () => {
   it('retains drafts for seven days and emits day 3/day 6 reminders once', () => {
     vi.stubGlobal('crypto', { randomUUID: () => 'draft-id' });
     const start = new Date('2026-08-01T00:00:00Z');
-    const draft = createDraft(job, start);
+    const draft = createDraft(job, 'account-1', start);
     expect(evaluateDrafts([draft], new Date('2026-08-04T00:00:00Z')).reminder3).toHaveLength(1);
     const day3Sent: JobDraft = { ...draft, reminderState: { day3SentAt: '2026-08-04T00:00:00Z' } };
     expect(evaluateDrafts([day3Sent], new Date('2026-08-07T00:00:00Z')).reminder6).toHaveLength(1);
@@ -25,7 +25,7 @@ describe('draft lifecycle', () => {
 
   it('extension resets retention/reminders and confirmation starts a sync-safe outbox item', () => {
     vi.stubGlobal('crypto', { randomUUID: () => 'generated-id' });
-    const draft = { ...createDraft(job, new Date('2026-08-01T00:00:00Z')), reminderState: { day3SentAt: 'x' } };
+    const draft = { ...createDraft(job, 'account-1', new Date('2026-08-01T00:00:00Z')), reminderState: { day3SentAt: 'x' } };
     const extended = extendDraft(draft, new Date('2026-08-06T00:00:00Z'));
     expect(extended.expiresAt).toBe('2026-08-13T00:00:00.000Z');
     expect(extended.reminderState).toEqual({});

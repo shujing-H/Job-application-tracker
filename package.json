@@ -1,11 +1,13 @@
 {
   "name": "job-application-tracker",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "audit:manifest": "node scripts/audit-manifest.mjs",
+    "verify": "npm test && npm run build && npm run audit:manifest",
     "test": "vitest run",
     "test:watch": "vitest"
   },
