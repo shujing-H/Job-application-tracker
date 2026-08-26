@@ -71,6 +71,7 @@ export async function attachSpreadsheet(details: {
   spreadsheetId: string;
   spreadsheetUrl: string;
   worksheetTitle: string;
+  worksheetId: number;
 }): Promise<TrackerState> {
   return mutate((state) => {
     if (!state.connection) throw new Error('Connect a Google account first.');
@@ -91,6 +92,7 @@ export async function detachSpreadsheet(): Promise<TrackerState> {
     delete state.connection.spreadsheetId;
     delete state.connection.spreadsheetUrl;
     delete state.connection.worksheetTitle;
+    delete state.connection.worksheetId;
     state.syncSummary = { state: 'needs_sheet', message: 'Create or connect a compatible Job Tracker sheet.' };
     return structuredClone(state);
   });

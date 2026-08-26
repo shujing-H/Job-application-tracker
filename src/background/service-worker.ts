@@ -8,7 +8,7 @@ import {
   IdentityBoundaryError,
   removeCachedToken,
 } from '../google/identity';
-import { isRetryableStatus, retryDelayMs } from '../google/retry';
+import { isRetryableStatus, retryDelayMs, shouldAttemptSync } from '../google/retry';
 import {
   appendApplicationIdempotently,
   createJobTrackerSheet,
@@ -122,7 +122,7 @@ async function handleMessage(message: unknown, tabId?: number): Promise<unknown>
     return detachSpreadsheet();
   }
   if (message.type === 'SYNC_NOW') {
-    await requestSync();
+    await requestSync(true);
     return readState();
   }
   if (message.type === 'DELETE_DRAFT' && 'id' in message && typeof message.id === 'string') {
@@ -162,15 +162,22 @@ async function handleMessage(message: unknown, tabId?: number): Promise<unknown>
   return undefined;
 }
 
-async function requestSync(): Promise<void> {
-  if (!syncInFlight) syncInFlight = runSync().finally(() => { syncInFlight = undefined; });
+async function requestSync(force = false): Promise<void> {
+  if (!syncInFlight) syncInFlight = runSync(force).finally(() => { syncInFlight = undefined; });
   return syncInFlight;
 }
 
-async function runSync(): Promise<void> {
+async function runSync(force = false): Promise<void> {
   const state = await readState();
   const connection = state.connection;
   if (!connection?.spreadsheetId || !connection.worksheetTitle) return;
+  if (connection.worksheetId === undefined) {
+    await setSyncSummary(connection.accountId, connection.spreadsheetId, {
+      state: 'error',
+      message: 'Reconnect the Job Tracker sheet once to finish upgrading its sync configuration.',
+    });
+    return;
+  }
 
   let identity;
   try {
@@ -188,9 +195,7 @@ async function runSync(): Promise<void> {
 
   const due = Object.values(state.applications)
     .filter((application) => application.ownerAccountId === connection.accountId)
-    .filter((application) => application.sync.state === 'pending'
-      || (application.sync.state === 'retrying'
-        && (!application.sync.nextAttemptAt || application.sync.nextAttemptAt <= new Date().toISOString())));
+    .filter((application) => shouldAttemptSync(application.sync, new Date().toISOString(), force));
   if (!due.length) {
     await summarizeSyncState(connection.accountId, connection.spreadsheetId);
     return;
@@ -199,12 +204,27 @@ async function runSync(): Promise<void> {
   await setSyncSummary(connection.accountId, connection.spreadsheetId, { state: 'syncing', message: `Syncing ${due.length} confirmed application${due.length === 1 ? '' : 's'}…` });
   for (const application of due) {
     try {
-      const sheetRow = await appendApplicationIdempotently(
-        identity.token,
-        connection.spreadsheetId,
-        connection.worksheetTitle,
-        application,
-      );
+      let sheetRow: number | undefined;
+      try {
+        sheetRow = await appendApplicationIdempotently(
+          identity.token,
+          connection.spreadsheetId,
+          connection.worksheetTitle,
+          connection.worksheetId,
+          application,
+        );
+      } catch (error) {
+        if (!(error instanceof SheetsApiError) || error.status !== 401) throw error;
+        await removeCachedToken(identity.token).catch(() => undefined);
+        identity = await getSilentIdentity(connection.accountId);
+        sheetRow = await appendApplicationIdempotently(
+          identity.token,
+          connection.spreadsheetId,
+          connection.worksheetTitle,
+          connection.worksheetId,
+          application,
+        );
+      }
       const syncedAt = new Date().toISOString();
       await updateApplication(application.id, connection.accountId, connection.spreadsheetId, (current) => ({
         ...current,
@@ -212,6 +232,12 @@ async function runSync(): Promise<void> {
       }));
       await setSyncSummary(connection.accountId, connection.spreadsheetId, { state: 'ready', message: 'All confirmed applications are synced.', lastSyncedAt: syncedAt });
     } catch (error) {
+      if (error instanceof IdentityBoundaryError) {
+        await disconnectGoogleIdentity();
+        await clearIdentityBoundary('The Chrome Google account changed or disconnected. Local drafts and queued records were cleared before another account could receive them.');
+        await chrome.storage.session.clear();
+        return;
+      }
       const apiError = error instanceof SheetsApiError ? error : undefined;
       if (apiError?.status === 401) await removeCachedToken(identity.token);
       const attempts = application.sync.attempts + 1;

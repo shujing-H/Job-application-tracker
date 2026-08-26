@@ -61,6 +61,7 @@ export interface GoogleConnection {
   spreadsheetId?: string;
   spreadsheetUrl?: string;
   worksheetTitle?: string;
+  worksheetId?: number;
 }
 
 export interface SyncSummary {

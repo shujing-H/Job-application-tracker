@@ -1,4 +1,16 @@
 export type GoogleIdentity = { accountId: string; email: string; token: string };
+const PLACEHOLDER_CLIENT_ID_PREFIX = '000000000000-';
+
+export function oauthConfigured(): boolean {
+  const clientId = chrome.runtime.getManifest().oauth2?.client_id;
+  return Boolean(clientId && !clientId.startsWith(PLACEHOLDER_CLIENT_ID_PREFIX));
+}
+
+function requireOauthConfiguration(): void {
+  if (!oauthConfigured()) {
+    throw new Error('Google sign-in needs a one-time OAuth client ID. See the Google OAuth setup guide.');
+  }
+}
 
 async function profile(): Promise<chrome.identity.ProfileUserInfo> {
   return chrome.identity.getProfileUserInfo({ accountStatus: 'ANY' });
@@ -12,12 +24,14 @@ function requireProfile(user: chrome.identity.ProfileUserInfo): { accountId: str
 }
 
 export async function connectGoogleIdentity(): Promise<GoogleIdentity> {
+  requireOauthConfiguration();
   const result = await chrome.identity.getAuthToken({ interactive: true, enableGranularPermissions: true });
   if (!result.token) throw new Error('Google authorization did not return an access token.');
   return { ...requireProfile(await profile()), token: result.token };
 }
 
 export async function getSilentIdentity(expectedAccountId: string): Promise<GoogleIdentity> {
+  requireOauthConfiguration();
   const account = await assertCurrentAccount(expectedAccountId);
   const result = await chrome.identity.getAuthToken({ interactive: false });
   if (!result.token) throw new Error('Reconnect Google Sheets to resume syncing.');

@@ -25,7 +25,7 @@ npm run verify
 
 `npm run verify` runs the unit tests, TypeScript production build, and an audit of the generated `dist/manifest.json`. Load `dist/` from `chrome://extensions` using **Developer mode → Load unpacked**.
 
-The checked-in OAuth client ID is intentionally nonfunctional. Complete [Google Cloud and OAuth setup](docs/GOOGLE_OAUTH_SETUP.md) and replace it before testing sign-in. The OAuth client ID is public configuration, not a client secret.
+The checked-in OAuth client ID is intentionally nonfunctional. Complete [Google Cloud and OAuth setup](docs/GOOGLE_OAUTH_SETUP.md), copy `.env.example` to `.env.local`, and supply the public client ID before testing sign-in. No source edit or client secret is needed.
 
 ## Data flow
 

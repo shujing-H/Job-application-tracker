@@ -55,19 +55,36 @@ describe('Google Sheets mapping', () => {
       values: [[...SHEET_COLUMNS], ['Acme', 'Engineer', '', '', '', '', 'https://example.com/jobs/1']],
     }), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
-    expect(await appendApplicationIdempotently('token', 'sheet-id', 'Applications', application)).toBe(2);
+    expect(await appendApplicationIdempotently('token', 'sheet-id', 'Applications', 42, application)).toBe(2);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0]?.[1]?.method).toBeUndefined();
   });
 
-  it('reads for duplicates before appending a new confirmed row', async () => {
+  it('atomically appends a new row and its private idempotency marker', async () => {
     const fetchMock = vi.fn((_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> => Promise.reject(new Error('unmocked call')))
       .mockResolvedValueOnce(new Response(JSON.stringify({ values: [[...SHEET_COLUMNS]] }), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ updates: { updatedRange: 'Applications!A2:I2' } }), { status: 200 }));
+      .mockResolvedValueOnce(new Response(JSON.stringify({}), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ replies: [{}, {}] }), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
-    expect(await appendApplicationIdempotently('token', 'sheet-id', 'Applications', application)).toBe(2);
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(await appendApplicationIdempotently('token', 'sheet-id', 'Applications', 42, application)).toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(fetchMock.mock.calls[1]?.[1]?.method).toBe('POST');
-    expect(fetchMock.mock.calls[1]?.[1]?.body).toContain('https://example.com/jobs/1');
+    const body = JSON.parse(String(fetchMock.mock.calls[2]?.[1]?.body));
+    expect(body.requests[0].appendCells).toMatchObject({ sheetId: 42, fields: 'userEnteredValue' });
+    expect(body.requests[0].appendCells.rows[0].values).toHaveLength(9);
+    expect(body.requests[1].createDeveloperMetadata.developerMetadata).toMatchObject({
+      metadataKey: 'jobTrackerApplicationId',
+      metadataValue: 'application-1',
+      visibility: 'PROJECT',
+    });
+  });
+
+  it('does not append when the atomic idempotency marker already exists', async () => {
+    const fetchMock = vi.fn((_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> => Promise.reject(new Error('unmocked call')))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ values: [[...SHEET_COLUMNS]] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ matchedDeveloperMetadata: [{}] }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    expect(await appendApplicationIdempotently('token', 'sheet-id', 'Applications', 42, application)).toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isRetryableStatus, retryDelayMs } from './retry';
+import { isRetryableStatus, retryDelayMs, shouldAttemptSync } from './retry';
 
 describe('Sheets retry policy', () => {
   it('backs off from one minute to six hours', () => {
@@ -10,5 +10,12 @@ describe('Sheets retry policy', () => {
   it('retries offline, throttling, timeouts, and server errors only', () => {
     expect([0, 401, 408, 429, 500, 503].every(isRetryableStatus)).toBe(true);
     expect([400, 403, 404].some(isRetryableStatus)).toBe(false);
+  });
+
+  it('lets Sync now override backoff without retrying permanently blocked records', () => {
+    const retrying = { state: 'retrying' as const, attempts: 2, nextAttemptAt: '2099-01-01T00:00:00.000Z' };
+    expect(shouldAttemptSync(retrying, '2026-08-26T00:00:00.000Z')).toBe(false);
+    expect(shouldAttemptSync(retrying, '2026-08-26T00:00:00.000Z', true)).toBe(true);
+    expect(shouldAttemptSync({ state: 'blocked', attempts: 1 }, '2026-08-26T00:00:00.000Z', true)).toBe(false);
   });
 });

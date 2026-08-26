@@ -30,13 +30,13 @@ This policy chooses privacy over cross-account recovery. Unsynced records are de
 - Job detection creates only a local draft.
 - A row becomes eligible only after a conservative same-tab success phrase or the explicit **I applied** button.
 - Local duplicate protection is scoped by account and fingerprints normalized company, role, and canonical job URL.
-- Before every append, the adapter rereads columns A–I and searches for the same fingerprint. If an append succeeded but its response was lost, the retry sees the existing row and marks the outbox item synced instead of appending again.
+- Before every append, the adapter rereads columns A–I for the same job and searches project-visible developer metadata for the same outbox record. The row and its metadata marker are written together in one atomic Sheets batch, so a lost response can be retried without appending again.
 - The adapter refuses to read or append when the nine headers no longer match exactly.
 - A single in-memory sync promise prevents overlapping service-worker sync loops.
 
 ## Failure behavior
 
-- Offline, timeout, throttling, expired-token, and Google 5xx errors retry after 1, 5, 15, 60, then 360 minutes.
+- Offline, timeout, throttling, expired-token, and Google 5xx errors retry after 1, 5, 15, 60, then 360 minutes. A 401 first invalidates Chrome's cached token and retries once immediately; **Sync now** can safely override a scheduled backoff.
 - Permanent permission, missing-sheet, or schema errors block that record and show a friendly error.
 - Reconnecting a compatible sheet makes blocked records pending again.
 - OAuth access tokens are removed from Chrome's cache after a 401 and reacquired through Chrome Identity; they are never copied into storage or logs.

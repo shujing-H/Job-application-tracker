@@ -3,6 +3,7 @@ import { SHEET_COLUMNS, type ConfirmedApplication } from '../domain/model';
 
 const API = 'https://sheets.googleapis.com/v4/spreadsheets';
 export const DEFAULT_WORKSHEET = 'Applications';
+const APPLICATION_METADATA_KEY = 'jobTrackerApplicationId';
 
 export class SheetsApiError extends Error {
   constructor(public readonly status: number, message: string) {
@@ -42,11 +43,13 @@ export async function createJobTrackerSheet(token: string): Promise<{
   spreadsheetId: string;
   spreadsheetUrl: string;
   worksheetTitle: string;
+  worksheetId: number;
 }> {
   const result = await request<{
     spreadsheetId: string;
     spreadsheetUrl?: string;
-  }>(token, `${API}?fields=spreadsheetId,spreadsheetUrl`, {
+    sheets?: Array<{ properties?: { sheetId?: number; title?: string } }>;
+  }>(token, `${API}?fields=spreadsheetId,spreadsheetUrl,sheets.properties(sheetId,title)`, {
     method: 'POST',
     body: JSON.stringify({
       properties: { title: 'Job Tracker' },
@@ -56,10 +59,13 @@ export async function createJobTrackerSheet(token: string): Promise<{
       }],
     }),
   });
+  const worksheetId = result.sheets?.find(({ properties }) => properties?.title === DEFAULT_WORKSHEET)?.properties?.sheetId;
+  if (worksheetId === undefined) throw new SheetsApiError(500, 'Google created the spreadsheet without the Applications worksheet.');
   return {
     spreadsheetId: result.spreadsheetId,
     spreadsheetUrl: result.spreadsheetUrl ?? `https://docs.google.com/spreadsheets/d/${result.spreadsheetId}/edit`,
     worksheetTitle: DEFAULT_WORKSHEET,
+    worksheetId,
   };
 }
 
@@ -83,15 +89,17 @@ export async function validateCompatibleSheet(token: string, input: string): Pro
   spreadsheetId: string;
   spreadsheetUrl: string;
   worksheetTitle: string;
+  worksheetId: number;
 }> {
   const spreadsheetId = parseSpreadsheetId(input);
   const metadata = await request<{
     spreadsheetUrl?: string;
-    sheets?: Array<{ properties?: { title?: string } }>;
-  }>(token, `${API}/${encodeURIComponent(spreadsheetId)}?fields=spreadsheetUrl,sheets.properties.title`);
+    sheets?: Array<{ properties?: { sheetId?: number; title?: string } }>;
+  }>(token, `${API}/${encodeURIComponent(spreadsheetId)}?fields=spreadsheetUrl,sheets.properties(sheetId,title)`);
   for (const sheet of metadata.sheets ?? []) {
     const title = sheet.properties?.title;
-    if (!title) continue;
+    const worksheetId = sheet.properties?.sheetId;
+    if (!title || worksheetId === undefined) continue;
     const header = await request<{ values?: unknown[][] }>(
       token,
       `${API}/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(`${quoteSheetTitle(title)}!A1:I1`)}`,
@@ -101,6 +109,7 @@ export async function validateCompatibleSheet(token: string, input: string): Pro
         spreadsheetId,
         spreadsheetUrl: metadata.spreadsheetUrl ?? `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`,
         worksheetTitle: title,
+        worksheetId,
       };
     }
   }
@@ -140,6 +149,7 @@ export async function appendApplicationIdempotently(
   token: string,
   spreadsheetId: string,
   worksheetTitle: string,
+  worksheetId: number,
   application: ConfirmedApplication,
 ): Promise<number | undefined> {
   const range = `${quoteSheetTitle(worksheetTitle)}!A:I`;
@@ -150,11 +160,49 @@ export async function appendApplicationIdempotently(
   const duplicate = findDuplicateRow(current.values ?? [], application);
   if (duplicate) return duplicate;
 
-  const appended = await request<{ updates?: { updatedRange?: string } }>(
+  const metadata = await request<{ matchedDeveloperMetadata?: unknown[] }>(
     token,
-    `${API}/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(range)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
-    { method: 'POST', body: JSON.stringify({ values: [applicationRow(application)] }) },
+    `${API}/${encodeURIComponent(spreadsheetId)}/developerMetadata:search`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        dataFilters: [{ developerMetadataLookup: {
+          metadataKey: APPLICATION_METADATA_KEY,
+          metadataValue: application.id,
+          visibility: 'PROJECT',
+        } }],
+      }),
+    },
   );
-  const row = appended.updates?.updatedRange?.match(/![A-Z]+(\d+):/)?.[1];
-  return row ? Number(row) : undefined;
+  if (metadata.matchedDeveloperMetadata?.length) return undefined;
+
+  await request(
+    token,
+    `${API}/${encodeURIComponent(spreadsheetId)}:batchUpdate`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        requests: [
+          {
+            appendCells: {
+              sheetId: worksheetId,
+              rows: [{ values: applicationRow(application).map((value) => cell(value)) }],
+              fields: 'userEnteredValue',
+            },
+          },
+          {
+            createDeveloperMetadata: {
+              developerMetadata: {
+                metadataKey: APPLICATION_METADATA_KEY,
+                metadataValue: application.id,
+                visibility: 'PROJECT',
+                location: { sheetId: worksheetId },
+              },
+            },
+          },
+        ],
+      }),
+    },
+  );
+  return undefined;
 }

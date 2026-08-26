@@ -25,8 +25,8 @@ Google documents `drive.file` as the recommended, non-sensitive scope that limit
 1. In **Google Auth Platform → Clients**, create a client of type **Chrome Extension**.
 2. Enter the exact Chrome Web Store extension ID from step 1.
 3. Copy the resulting client ID. It ends in `.apps.googleusercontent.com` and is public configuration.
-4. Replace `000000000000-replace-with-your-client-id.apps.googleusercontent.com` in `manifest.config.ts`.
-5. Run `npm run verify` and inspect `dist/manifest.json` to confirm the client ID and the single `drive.file` scope.
+4. Copy `.env.example` to `.env.local` and replace its example value. `.env.local` is ignored by Git; never put a client secret, access token, or refresh token there.
+5. Run `npm run verify` and inspect `dist/manifest.json` to confirm the client ID and the single `drive.file` scope. A production build can instead receive `GOOGLE_OAUTH_CLIENT_ID` from its build environment.
 
 For local testing while the app is in testing status, add each tester's Google account under **Audience → Test users**. A tester must also be signed into Chrome with the account they intend to use.
 
