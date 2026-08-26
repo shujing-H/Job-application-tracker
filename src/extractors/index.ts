@@ -29,29 +29,74 @@ const RULES: Array<{ host: RegExp; rules: Rules }> = [
   },
   {
     host: /(^|\.)greenhouse\.io$/,
-    rules: { source: 'Greenhouse', company: ['.company-name', '#header .company-name', 'meta[property="og:site_name"]'], role: ['h1'], location: ['.location'], description: ['#content', '.job__description'] },
+    rules: {
+      source: 'Greenhouse',
+      company: ['.company-name', '#header .company-name', 'meta[property="og:site_name"]', 'main img[alt$=" Logo"]'],
+      role: ['h1'],
+      location: ['.location', '.job__location'],
+      description: ['#content', '.job__description'],
+    },
   },
 ];
+
+function clean(value: string | null | undefined): string {
+  return value?.replace(/\s+/g, ' ').trim() ?? '';
+}
 
 function text(selectors: string[]): string {
   for (const selector of selectors) {
     const element = document.querySelector(selector);
-    const value = element instanceof HTMLMetaElement ? element.content : element?.textContent;
-    if (value?.trim()) return value.replace(/\s+/g, ' ').trim();
+    const value = element instanceof HTMLMetaElement
+      ? element.content
+      : element instanceof HTMLImageElement
+        ? element.alt
+        : element?.textContent;
+    if (clean(value)) return clean(value);
   }
   return '';
+}
+
+export function parseLinkedInSemanticHeader(paragraphs: string[], company: string): { role: string; location: string } {
+  const values = paragraphs.map(clean).filter(Boolean);
+  const companyIndex = values.findIndex((value) => value === clean(company));
+  if (companyIndex < 0) return { role: '', location: '' };
+  const role = values[companyIndex + 1] ?? '';
+  const locationSummary = values[companyIndex + 2] ?? '';
+  return { role, location: locationSummary.split(/\s+[·•]\s+/)[0] ?? '' };
+}
+
+function linkedInSemanticJob(): Pick<CapturedJob, 'company' | 'role' | 'location' | 'jdSnapshot'> | undefined {
+  const root = document.querySelector<HTMLElement>('[aria-label="Primary content"]');
+  if (!root) return undefined;
+  const company = clean(root.querySelector('[aria-label^="Company,"]')?.textContent
+    ?? root.querySelector('a[href*="/company/"]')?.textContent);
+  const header = parseLinkedInSemanticHeader(
+    [...root.querySelectorAll('p')].map((paragraph) => paragraph.textContent ?? ''),
+    company,
+  );
+  const aboutHeading = [...root.querySelectorAll('h2')]
+    .find((heading) => clean(heading.textContent).toLowerCase() === 'about the job');
+  const aboutContainer = aboutHeading?.parentElement?.parentElement;
+  const descriptionText = aboutContainer?.innerText;
+  const jdSnapshot = clean(descriptionText).replace(/^about the job\s*/i, '');
+  if (!header.role || jdSnapshot.length < 80) return undefined;
+  return { company, role: header.role, location: header.location, jdSnapshot };
 }
 
 export function extractJob(): CapturedJob | undefined {
   const match = RULES.find(({ host }) => host.test(location.hostname));
   if (!match) return undefined;
-  const role = text(match.rules.role);
-  const jdSnapshot = text(match.rules.description);
+  const linkedInSemantic = match.rules.source === 'LinkedIn' ? linkedInSemanticJob() : undefined;
+  let company = text(match.rules.company) || linkedInSemantic?.company || '';
+  if (match.rules.source === 'Greenhouse') company = company.replace(/\s+Logo$/i, '');
+  const role = text(match.rules.role) || linkedInSemantic?.role || '';
+  const locationText = text(match.rules.location) || linkedInSemantic?.location || '';
+  const jdSnapshot = text(match.rules.description) || linkedInSemantic?.jdSnapshot || '';
   if (!role || jdSnapshot.length < 80) return undefined;
   return {
-    company: text(match.rules.company),
+    company,
     role,
-    location: text(match.rules.location),
+    location: locationText,
     jobUrl: location.href,
     source: match.rules.source,
     jdSnapshot,

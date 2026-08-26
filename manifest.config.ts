@@ -18,6 +18,7 @@ export default defineManifest(({ mode }) => {
       'https://*.myworkdayjobs.com/*',
       'https://boards.greenhouse.io/*',
       'https://job-boards.greenhouse.io/*',
+      'https://job-boards.eu.greenhouse.io/*',
       'https://sheets.googleapis.com/*',
     ],
     oauth2: {
@@ -40,6 +41,7 @@ export default defineManifest(({ mode }) => {
           'https://*.myworkdayjobs.com/*',
           'https://boards.greenhouse.io/*',
           'https://job-boards.greenhouse.io/*',
+          'https://job-boards.eu.greenhouse.io/*',
         ],
         js: ['src/content/index.ts'],
         run_at: 'document_idle',
