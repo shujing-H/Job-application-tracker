@@ -27,6 +27,8 @@ npm run verify
 
 The checked-in OAuth client ID is intentionally nonfunctional. Complete [Google Cloud and OAuth setup](docs/GOOGLE_OAUTH_SETUP.md), copy `.env.example` to `.env.local`, and supply the public client ID before testing sign-in. No source edit or client secret is needed.
 
+The committed Chrome Web Store public key gives unpacked builds the stable extension ID `fiejecpjihcaiglpahoincdmpdjnmmdc`; `npm run audit:manifest` derives and verifies that ID from every generated manifest.
+
 ## Data flow
 
 ```text

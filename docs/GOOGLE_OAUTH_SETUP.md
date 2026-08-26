@@ -4,9 +4,9 @@ This is the nontechnical release checklist for the person who owns the extension
 
 ## 1. Reserve the Chrome extension ID
 
-1. Create the extension item in the Chrome Web Store Developer Dashboard. It can remain a draft.
-2. Record the item/extension ID. The Chrome Extension OAuth client must use exactly this ID.
-3. For unpacked development with the same stable ID, follow Chrome's guidance for using the Web Store public key in the manifest `key` field. Do not invent or commit a private signing key.
+1. The Chrome Web Store draft reserves extension ID `fiejecpjihcaiglpahoincdmpdjnmmdc`.
+2. The matching Web Store public key is committed in the manifest `key` field, so unpacked builds derive the same ID. It is a public identifier, not a private signing key.
+3. The Chrome Extension OAuth client must use exactly `fiejecpjihcaiglpahoincdmpdjnmmdc`.
 
 Changing the extension ID breaks the OAuth client mapping. Chrome's [OAuth manifest documentation](https://developer.chrome.com/docs/extensions/reference/manifest/oauth2) describes the `oauth2` client and stable-ID requirement.
 
