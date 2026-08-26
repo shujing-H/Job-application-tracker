@@ -67,17 +67,15 @@ export function parseLinkedInSemanticHeader(paragraphs: string[], company: strin
 }
 
 function linkedInSemanticJob(): Pick<CapturedJob, 'company' | 'role' | 'location' | 'jdSnapshot'> | undefined {
-  // On job detail pages LinkedIn exposes a primary-content region; in the
-  // split-pane search view the selected job lives beside the results list.
-  // Reading the visible semantic nodes from the whole document handles both
-  // layouts without scraping search-result cards that lack a full JD.
-  const company = clean(document.querySelector('[aria-label^="Company,"]')?.textContent
-    ?? document.querySelector('a[href*="/company/"]')?.textContent);
+  const root = document.querySelector<HTMLElement>('[aria-label="Primary content"]');
+  if (!root) return undefined;
+  const company = clean(root.querySelector('[aria-label^="Company,"]')?.textContent
+    ?? root.querySelector('a[href*="/company/"]')?.textContent);
   const header = parseLinkedInSemanticHeader(
-    [...document.querySelectorAll('p')].map((paragraph) => paragraph.textContent ?? ''),
+    [...root.querySelectorAll('p')].map((paragraph) => paragraph.textContent ?? ''),
     company,
   );
-  const aboutHeading = [...document.querySelectorAll('h2')]
+  const aboutHeading = [...root.querySelectorAll('h2')]
     .find((heading) => clean(heading.textContent).toLowerCase() === 'about the job');
   const aboutContainer = aboutHeading?.parentElement?.parentElement;
   const descriptionText = aboutContainer?.innerText;
@@ -89,6 +87,10 @@ function linkedInSemanticJob(): Pick<CapturedJob, 'company' | 'role' | 'location
 export function extractJob(): CapturedJob | undefined {
   const match = RULES.find(({ host }) => host.test(location.hostname));
   if (!match) return undefined;
+  // A LinkedIn search page contains many job cards and can surface text from a
+  // previous selection. Capture only the dedicated detail route until the
+  // split-pane DOM has a similarly reliable, isolated semantic boundary.
+  if (match.rules.source === 'LinkedIn' && location.pathname === '/jobs/search-results/') return undefined;
   const linkedInSemantic = match.rules.source === 'LinkedIn' ? linkedInSemanticJob() : undefined;
   let company = text(match.rules.company) || linkedInSemantic?.company || '';
   if (match.rules.source === 'Greenhouse') company = company.replace(/\s+Logo$/i, '');

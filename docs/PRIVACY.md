@@ -7,7 +7,7 @@ Review date: 2026-08-26
 | Data | Where it exists | When it leaves the device | Retention |
 | --- | --- | --- | --- |
 | Company, role, location, job URL, source, JD snapshot | Account-bound `chrome.storage.local` draft | Never as a draft | 7 days, unless extended or deleted |
-| Confirmed application plus applied date, status, notes | Account-bound local outbox; then the user's connected sheet | Only after detected or manual confirmation | Local until disconnect/account change; sheet retention is controlled by the user |
+| Confirmed application or referral request plus date, status, referral flag, notes | Account-bound local outbox; then the user's connected sheet | Only after detected or manual confirmation | Local until disconnect/account change; sheet retention is controlled by the user |
 | Google account stable ID and email | Current local connection record | Never sent to an application backend | Until disconnect/account change |
 | Spreadsheet ID, URL, and worksheet title | Current local connection record | Used only in requests to Google Sheets API | Until disconnect/account change |
 | OAuth access token | Chrome Identity API cache | Sent only to Google's API | Controlled by Chrome; never stored by this extension |
@@ -28,10 +28,10 @@ This policy chooses privacy over cross-account recovery. Unsynced records are de
 ## Write and duplicate controls
 
 - Job detection creates only a local draft.
-- A row becomes eligible only after a conservative same-tab success phrase or the explicit **I applied** button.
+- A row becomes eligible only after a conservative same-tab success phrase, the explicit **I applied** button, or the explicit **Request referral** button.
 - Local duplicate protection is scoped by account and fingerprints normalized company, role, and canonical job URL.
-- Before every append, the adapter rereads columns A–I for the same job and searches project-visible developer metadata for the same outbox record. The row and its metadata marker are written together in one atomic Sheets batch, so a lost response can be retried without appending again.
-- The adapter refuses to read or append when the nine headers no longer match exactly.
+- Before every append, the adapter rereads columns A–J for the same job and searches project-visible developer metadata for the same outbox record. The row and its metadata marker are written together in one atomic Sheets batch, so a lost response can be retried without appending again.
+- The adapter safely upgrades its previous nine-column sheet by adding the `Referral` header; it otherwise refuses to read or append when headers do not match exactly.
 - A single in-memory sync promise prevents overlapping service-worker sync loops.
 
 ## Failure behavior

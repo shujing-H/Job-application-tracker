@@ -150,6 +150,7 @@ export async function extendStoredDraft(id: string): Promise<JobDraft | undefine
 export async function confirmStoredDraft(
   id: string,
   confirmation: ConfirmedApplication['confirmation'],
+  referral = false,
 ): Promise<ConfirmedApplication | undefined> {
   return mutate((state) => {
     const draft = state.drafts[id];
@@ -163,7 +164,7 @@ export async function confirmStoredDraft(
       delete state.drafts[id];
       return structuredClone(duplicate);
     }
-    const application = confirmDraft(draft, confirmation);
+    const application = confirmDraft(draft, confirmation, referral);
     state.applications[application.id] = application;
     delete state.drafts[id];
     return structuredClone(application);

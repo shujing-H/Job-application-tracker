@@ -141,6 +141,12 @@ async function handleMessage(message: unknown, tabId?: number): Promise<unknown>
     void requestSync();
     return readState();
   }
+  if (message.type === 'REQUEST_REFERRAL' && 'id' in message && typeof message.id === 'string') {
+    if (!(await enforceIdentityBoundary())) return readState();
+    await confirmStoredDraft(message.id, 'manual', true);
+    void requestSync();
+    return readState();
+  }
   if (message.type === 'JOB_DETECTED' && 'job' in message) {
     if (!(await enforceIdentityBoundary())) return undefined;
     const draft = await upsertDraft(message.job as CapturedJob);

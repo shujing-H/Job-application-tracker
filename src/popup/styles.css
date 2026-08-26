@@ -3,12 +3,14 @@
 body { margin: 0; min-width: 400px; max-width: 400px; }
 main { padding: 18px; }
 header { display: flex; align-items: center; justify-content: space-between; margin: 2px 2px 18px; }
+.brand { align-items: center; display: flex; gap: 9px; }
+.brand img { height: 28px; width: 28px; }
 h1 { font-size: 25px; line-height: 1.1; letter-spacing: -.045em; margin: 3px 0 0; }
 h2 { color: #172033; font-size: 16px; letter-spacing: -.015em; margin: 0; }
 p { color: #667085; font-size: 12px; line-height: 1.48; margin: 6px 0; }
 .eyebrow, .source { color: #4f46e5; font-size: 10px; font-weight: 750; letter-spacing: .1em; margin: 0 0 4px; }
 .count { align-items: center; background: #eef2ff; border: 1px solid #dfe4ff; border-radius: 10px; color: #4338ca; display: inline-flex; font-size: 13px; font-weight: 750; height: 32px; justify-content: center; width: 32px; }
-.setup, .sync, article, .empty { background: #fff; border: 1px solid #e6eaf0; border-radius: 14px; box-shadow: 0 1px 2px rgb(16 24 40 / 3%); margin: 10px 0; padding: 15px; }
+.setup, .sync, article, .empty { background: #fff; border: 1px solid #e8ebf0; border-radius: 11px; margin: 10px 0; padding: 15px; }
 .setup { padding: 18px; }
 .setup > p { margin: 7px 0 16px; }
 .account-row { color: #667085; font-size: 12px; margin-bottom: 15px; overflow-wrap: anywhere; }

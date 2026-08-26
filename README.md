@@ -6,15 +6,15 @@ A privacy-first Chrome Manifest V3 extension that keeps job-page drafts on the d
 
 - Chrome Identity OAuth for one Google account per local data boundary.
 - Creates a dedicated **Job Tracker** spreadsheet or validates a compatible sheet already authorized for this app.
-- Uses these exact columns: `Company`, `Role`, `Location`, `Applied Date`, `Source`, `Status`, `Job URL`, `JD Snapshot`, `Notes`.
-- Writes only after high-confidence success detection in the same tab or an explicit **I applied** action.
+- Uses these exact columns: `Company`, `Role`, `Location`, `Applied Date`, `Source`, `Status`, `Referral`, `Job URL`, `JD Snapshot`, `Notes`.
+- Writes only after high-confidence success detection in the same tab, an explicit **I applied** action, or an explicit **Request referral** action.
 - Prevents local and remote duplicates with an account-scoped fingerprint and a read-before-append check.
 - Retries offline, throttled, authentication, and server failures with bounded backoff.
 - Shows disconnected, setup, syncing, retrying, blocked, and up-to-date states in the popup.
 - Clears drafts, queued rows, account identity, and sheet configuration when the Chrome Google account changes or disconnects, before a new account can see or sync them.
 - Requests only `drive.file`, the Google-recommended narrow OAuth scope for files created or opened with this app.
 
-Draft capture supports LinkedIn, Handshake, Workday, and Greenhouse. Drafts expire after seven days, with grouped reminders on days 3 and 6 and a user-controlled seven-day extension.
+Draft capture supports LinkedIn job-detail pages, Handshake, Workday, and Greenhouse. Drafts expire after seven days, with grouped reminders on days 3 and 6 and a user-controlled seven-day extension.
 
 ## Development and verification
 

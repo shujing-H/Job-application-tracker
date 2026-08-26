@@ -53,7 +53,7 @@ function App(): React.JSX.Element {
   return (
     <main>
       <header>
-        <div><p className="eyebrow">PRIVATE JOB TRACKER</p><h1>Applications</h1></div>
+        <div className="brand"><img src="/icon.svg" alt="" /><div><p className="eyebrow">PRIVATE JOB TRACKER</p><h1>Applications</h1></div></div>
         <span className="count">{drafts.length}</span>
       </header>
 
@@ -131,6 +131,7 @@ function DraftCard({ draft, busy, act }: {
       <p className="expiry">Expires in {daysLeft} day{daysLeft === 1 ? '' : 's'}</p>
       <div className="actions">
         <button className="primary" disabled={busy} onClick={() => act(() => send({ type: 'CONFIRM_DRAFT', id: draft.id }))}>I applied</button>
+        <button disabled={busy} onClick={() => act(() => send({ type: 'REQUEST_REFERRAL', id: draft.id }))}>Request referral</button>
         <button disabled={busy} onClick={() => act(() => send({ type: 'EXTEND_DRAFT', id: draft.id }))}>Extend 7 days</button>
         <button className="danger" disabled={busy} onClick={() => act(() => send({ type: 'DELETE_DRAFT', id: draft.id }))}>Delete</button>
       </div>

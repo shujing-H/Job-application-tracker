@@ -32,5 +32,9 @@ describe('draft lifecycle', () => {
     expect(extended.expiresAt).toBe('2026-08-13T00:00:00.000Z');
     expect(extended.reminderState).toEqual({});
     expect(confirmDraft(extended, 'manual').sync).toEqual({ state: 'pending', attempts: 0 });
+    expect(confirmDraft(extended, 'manual', true)).toMatchObject({
+      status: 'Referral requested',
+      referral: true,
+    });
   });
 });

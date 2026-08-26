@@ -85,6 +85,30 @@ function columnsMatch(values: unknown[] | undefined): boolean {
   return SHEET_COLUMNS.every((column, index) => values?.[index] === column) && values?.length === SHEET_COLUMNS.length;
 }
 
+const LEGACY_SHEET_COLUMNS = SHEET_COLUMNS.filter((column) => column !== 'Referral');
+
+function legacyColumnsMatch(values: unknown[] | undefined): boolean {
+  return LEGACY_SHEET_COLUMNS.every((column, index) => values?.[index] === column)
+    && values?.length === LEGACY_SHEET_COLUMNS.length;
+}
+
+async function ensureSheetColumns(
+  token: string,
+  spreadsheetId: string,
+  worksheetTitle: string,
+  values: unknown[] | undefined,
+): Promise<void> {
+  if (columnsMatch(values)) return;
+  if (!legacyColumnsMatch(values)) {
+    throw new Error('The connected sheet columns changed. Reconnect a compatible sheet.');
+  }
+  await request(
+    token,
+    `${API}/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(`${quoteSheetTitle(worksheetTitle)}!A1:J1`)}?valueInputOption=RAW`,
+    { method: 'PUT', body: JSON.stringify({ values: [SHEET_COLUMNS] }) },
+  );
+}
+
 export async function validateCompatibleSheet(token: string, input: string): Promise<{
   spreadsheetId: string;
   spreadsheetUrl: string;
@@ -102,16 +126,20 @@ export async function validateCompatibleSheet(token: string, input: string): Pro
     if (!title || worksheetId === undefined) continue;
     const header = await request<{ values?: unknown[][] }>(
       token,
-      `${API}/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(`${quoteSheetTitle(title)}!A1:I1`)}`,
+      `${API}/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(`${quoteSheetTitle(title)}!A1:J1`)}`,
     );
-    if (columnsMatch(header.values?.[0])) {
-      return {
-        spreadsheetId,
-        spreadsheetUrl: metadata.spreadsheetUrl ?? `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`,
-        worksheetTitle: title,
-        worksheetId,
-      };
+    try {
+      await ensureSheetColumns(token, spreadsheetId, title, header.values?.[0]);
+    } catch (error) {
+      if (!(error instanceof Error) || !error.message.includes('columns changed')) throw error;
+      continue;
     }
+    return {
+      spreadsheetId,
+      spreadsheetUrl: metadata.spreadsheetUrl ?? `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`,
+      worksheetTitle: title,
+      worksheetId,
+    };
   }
   throw new Error(`No worksheet has the exact required columns: ${SHEET_COLUMNS.join(', ')}.`);
 }
@@ -124,6 +152,7 @@ export function applicationRow(application: ConfirmedApplication): string[] {
     application.appliedDate,
     application.source,
     application.status,
+    application.referral ? 'Yes' : 'No',
     application.jobUrl,
     application.jdSnapshot,
     application.notes,
@@ -134,9 +163,9 @@ export function findDuplicateRow(rows: unknown[][], application: ConfirmedApplic
   if (!columnsMatch(rows[0])) throw new Error('The connected sheet columns changed. Reconnect a compatible sheet.');
   for (let index = 1; index < rows.length; index += 1) {
     const row = rows[index];
-    if (typeof row?.[0] !== 'string' || typeof row?.[1] !== 'string' || typeof row?.[6] !== 'string') continue;
+    if (typeof row?.[0] !== 'string' || typeof row?.[1] !== 'string' || typeof row?.[7] !== 'string') continue;
     try {
-      const fingerprint = jobFingerprint({ company: row[0], role: row[1], jobUrl: canonicalizeJobUrl(row[6]) });
+      const fingerprint = jobFingerprint({ company: row[0], role: row[1], jobUrl: canonicalizeJobUrl(row[7]) });
       if (fingerprint === application.fingerprint) return index + 1;
     } catch {
       // A malformed hand-edited row is not a match.
@@ -152,11 +181,13 @@ export async function appendApplicationIdempotently(
   worksheetId: number,
   application: ConfirmedApplication,
 ): Promise<number | undefined> {
-  const range = `${quoteSheetTitle(worksheetTitle)}!A:I`;
+  const range = `${quoteSheetTitle(worksheetTitle)}!A:J`;
   const current = await request<{ values?: unknown[][] }>(
     token,
     `${API}/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(range)}`,
   );
+  await ensureSheetColumns(token, spreadsheetId, worksheetTitle, current.values?.[0]);
+  if (legacyColumnsMatch(current.values?.[0])) current.values![0] = [...SHEET_COLUMNS];
   const duplicate = findDuplicateRow(current.values ?? [], application);
   if (duplicate) return duplicate;
 

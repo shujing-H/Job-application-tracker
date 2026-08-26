@@ -5,6 +5,7 @@ export const SHEET_COLUMNS = [
   'Applied Date',
   'Source',
   'Status',
+  'Referral',
   'Job URL',
   'JD Snapshot',
   'Notes',
@@ -42,7 +43,8 @@ export interface ConfirmedApplication extends CapturedJob {
   draftId: string;
   fingerprint: string;
   appliedDate: string;
-  status: 'Applied';
+  status: 'Applied' | 'Referral requested';
+  referral: boolean;
   notes: string;
   confirmation: 'detected' | 'manual';
   sync: {

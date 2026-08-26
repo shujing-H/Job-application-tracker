@@ -104,6 +104,7 @@ export function extendDraft(draft: JobDraft, now = new Date()): JobDraft {
 export function confirmDraft(
   draft: JobDraft,
   confirmation: ConfirmedApplication['confirmation'],
+  referral = false,
   now = new Date(),
 ): ConfirmedApplication {
   return {
@@ -118,7 +119,8 @@ export function confirmDraft(
     source: draft.source,
     jdSnapshot: draft.jdSnapshot,
     appliedDate: now.toISOString(),
-    status: 'Applied',
+    status: referral ? 'Referral requested' : 'Applied',
+    referral,
     notes: '',
     confirmation,
     sync: { state: 'pending', attempts: 0 },
