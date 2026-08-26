@@ -58,7 +58,8 @@ function text(selectors: string[]): string {
 
 export function parseLinkedInSemanticHeader(paragraphs: string[], company: string): { role: string; location: string } {
   const values = paragraphs.map(clean).filter(Boolean);
-  const companyIndex = values.findIndex((value) => value === clean(company));
+  const normalizedCompany = clean(company).toLocaleLowerCase();
+  const companyIndex = values.findIndex((value) => value.toLocaleLowerCase() === normalizedCompany);
   if (companyIndex < 0) return { role: '', location: '' };
   const role = values[companyIndex + 1] ?? '';
   const locationSummary = values[companyIndex + 2] ?? '';
@@ -66,15 +67,17 @@ export function parseLinkedInSemanticHeader(paragraphs: string[], company: strin
 }
 
 function linkedInSemanticJob(): Pick<CapturedJob, 'company' | 'role' | 'location' | 'jdSnapshot'> | undefined {
-  const root = document.querySelector<HTMLElement>('[aria-label="Primary content"]');
-  if (!root) return undefined;
-  const company = clean(root.querySelector('[aria-label^="Company,"]')?.textContent
-    ?? root.querySelector('a[href*="/company/"]')?.textContent);
+  // On job detail pages LinkedIn exposes a primary-content region; in the
+  // split-pane search view the selected job lives beside the results list.
+  // Reading the visible semantic nodes from the whole document handles both
+  // layouts without scraping search-result cards that lack a full JD.
+  const company = clean(document.querySelector('[aria-label^="Company,"]')?.textContent
+    ?? document.querySelector('a[href*="/company/"]')?.textContent);
   const header = parseLinkedInSemanticHeader(
-    [...root.querySelectorAll('p')].map((paragraph) => paragraph.textContent ?? ''),
+    [...document.querySelectorAll('p')].map((paragraph) => paragraph.textContent ?? ''),
     company,
   );
-  const aboutHeading = [...root.querySelectorAll('h2')]
+  const aboutHeading = [...document.querySelectorAll('h2')]
     .find((heading) => clean(heading.textContent).toLowerCase() === 'about the job');
   const aboutContainer = aboutHeading?.parentElement?.parentElement;
   const descriptionText = aboutContainer?.innerText;

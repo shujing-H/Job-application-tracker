@@ -11,6 +11,8 @@ describe('draft lifecycle', () => {
   it('normalizes tracking parameters and makes stable fingerprints', () => {
     expect(canonicalizeJobUrl(job.jobUrl)).toBe('https://www.linkedin.com/jobs/view/123');
     expect(jobFingerprint(job)).toBe(jobFingerprint({ ...job, jobUrl: 'https://www.linkedin.com/jobs/view/123' }));
+    expect(canonicalizeJobUrl('https://www.linkedin.com/jobs/search-results/?currentJobId=123&trackingId=abc'))
+      .toBe('https://www.linkedin.com/jobs/view/123');
   });
 
   it('retains drafts for seven days and emits day 3/day 6 reminders once', () => {

@@ -5,6 +5,17 @@ export const RETENTION_DAYS = 7;
 
 export function canonicalizeJobUrl(rawUrl: string): string {
   const url = new URL(rawUrl);
+  // LinkedIn's split-pane search view keeps the selected posting in a query
+  // parameter instead of the normal job-detail URL. Normalize both views to
+  // one identity so a job seen in search results cannot create another draft
+  // when the user later opens its detail page.
+  if (url.hostname.endsWith('linkedin.com') && url.pathname === '/jobs/search-results/') {
+    const currentJobId = url.searchParams.get('currentJobId');
+    if (currentJobId && /^\d+$/.test(currentJobId)) {
+      url.pathname = `/jobs/view/${currentJobId}`;
+      url.search = '';
+    }
+  }
   url.hash = '';
   for (const key of [...url.searchParams.keys()]) {
     if (key.startsWith('utm_') || ['trk', 'trackingId', 'ref', 'source'].includes(key)) {

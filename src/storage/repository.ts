@@ -7,7 +7,7 @@ import {
   type SyncSummary,
   type TrackerState,
 } from '../domain/model';
-import { confirmDraft, createDraft, extendDraft, jobFingerprint, mergeDraft } from '../domain/lifecycle';
+import { canonicalizeJobUrl, confirmDraft, createDraft, extendDraft, mergeDraft } from '../domain/lifecycle';
 
 export const STORAGE_KEY = 'trackerStateV2';
 const LEGACY_STORAGE_KEY = 'trackerStateV1';
@@ -121,9 +121,9 @@ export async function upsertDraft(captured: CapturedJob): Promise<JobDraft | und
   return mutate((state) => {
     const accountId = state.connection?.accountId;
     if (!accountId) return undefined;
-    const fingerprint = jobFingerprint(captured);
+    const canonicalUrl = canonicalizeJobUrl(captured.jobUrl);
     const existing = Object.values(state.drafts).find(
-      (draft) => draft.ownerAccountId === accountId && draft.fingerprint === fingerprint,
+      (draft) => draft.ownerAccountId === accountId && canonicalizeJobUrl(draft.jobUrl) === canonicalUrl,
     );
     const draft = existing ? mergeDraft(existing, captured) : createDraft(captured, accountId);
     state.drafts[draft.id] = draft;
@@ -156,7 +156,8 @@ export async function confirmStoredDraft(
     const accountId = state.connection?.accountId;
     if (!draft || !accountId || draft.ownerAccountId !== accountId) return undefined;
     const duplicate = Object.values(state.applications).find(
-      (application) => application.ownerAccountId === accountId && application.fingerprint === draft.fingerprint,
+      (application) => application.ownerAccountId === accountId
+        && canonicalizeJobUrl(application.jobUrl) === canonicalizeJobUrl(draft.jobUrl),
     );
     if (duplicate) {
       delete state.drafts[id];

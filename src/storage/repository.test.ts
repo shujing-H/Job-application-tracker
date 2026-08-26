@@ -40,6 +40,15 @@ describe('account-isolated repository', () => {
     expect(state.applications).toEqual({});
   });
 
+  it('keeps one active draft when the same posting is seen in LinkedIn search and detail views', async () => {
+    await connectAccount({ accountId: 'one', email: 'one@example.com' });
+    await upsertDraft({ ...job, jobUrl: 'https://www.linkedin.com/jobs/search-results/?currentJobId=123', role: 'First title' });
+    await upsertDraft({ ...job, jobUrl: 'https://www.linkedin.com/jobs/view/123?trackingId=abc', role: 'Refined title' });
+    const state = await readState();
+    expect(Object.values(state.drafts)).toHaveLength(1);
+    expect(Object.values(state.drafts)[0]?.jobUrl).toBe('https://www.linkedin.com/jobs/view/123');
+  });
+
   it('clears identity, sheet configuration, drafts, and outbox on disconnect', async () => {
     await connectAccount({ accountId: 'one', email: 'one@example.com' });
     await upsertDraft(job);

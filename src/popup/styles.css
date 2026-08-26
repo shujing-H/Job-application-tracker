@@ -1,36 +1,44 @@
-:root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #173f35; background: #f7f4ed; }
+:root { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #172033; background: #f6f8fc; }
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 410px; max-width: 410px; }
-main { padding: 20px; }
-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-h1 { font-size: 26px; margin: 2px 0; letter-spacing: -.04em; }
-h2 { font-size: 17px; margin: 4px 0; color: #18342d; }
-p { color: #52635e; margin: 6px 0; }
-.eyebrow, .source { color: #28705d; font-size: 10px; font-weight: 800; letter-spacing: .12em; }
-.count { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #173f35; color: white; font-weight: 700; }
-.setup, .sync, article, .empty { border: 1px solid #d9ded9; background: white; border-radius: 14px; padding: 14px; margin: 10px 0; }
+body { margin: 0; min-width: 400px; max-width: 400px; }
+main { padding: 18px; }
+header { display: flex; align-items: center; justify-content: space-between; margin: 2px 2px 18px; }
+h1 { font-size: 25px; line-height: 1.1; letter-spacing: -.045em; margin: 3px 0 0; }
+h2 { color: #172033; font-size: 16px; letter-spacing: -.015em; margin: 0; }
+p { color: #667085; font-size: 12px; line-height: 1.48; margin: 6px 0; }
+.eyebrow, .source { color: #4f46e5; font-size: 10px; font-weight: 750; letter-spacing: .1em; margin: 0 0 4px; }
+.count { align-items: center; background: #eef2ff; border: 1px solid #dfe4ff; border-radius: 10px; color: #4338ca; display: inline-flex; font-size: 13px; font-weight: 750; height: 32px; justify-content: center; width: 32px; }
+.setup, .sync, article, .empty { background: #fff; border: 1px solid #e6eaf0; border-radius: 14px; box-shadow: 0 1px 2px rgb(16 24 40 / 3%); margin: 10px 0; padding: 15px; }
 .setup { padding: 18px; }
-.setup > p { margin-bottom: 16px; }
-.account-row { font-size: 12px; color: #52635e; margin-bottom: 14px; overflow-wrap: anywhere; }
-.divider { display: flex; align-items: center; gap: 9px; color: #84908b; font-size: 10px; margin: 14px 0; }
-.divider::before, .divider::after { content: ''; height: 1px; background: #e0e4e1; flex: 1; }
-label { display: block; font-size: 11px; font-weight: 750; margin: 8px 0 5px; }
-input { width: 100%; border: 1px solid #c7d0cb; border-radius: 8px; padding: 9px; margin-bottom: 7px; color: #18342d; }
-.sync { display: flex; justify-content: space-between; gap: 12px; background: #e9f2ee; }
-.sync.retrying { background: #fff5df; border-color: #ead4a0; }
-.sync.error { background: #fff0ee; border-color: #e8bbb5; }
-.sync p { font-size: 11px; max-width: 240px; }
-.sync-actions { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 6px; white-space: nowrap; }
-.sync-actions a { color: #176f59; font-size: 12px; font-weight: 700; }
-.expiry { font-size: 12px; color: #8b5e31; }
-.actions { display: flex; gap: 7px; margin-top: 12px; }
-button { border: 1px solid #c7d0cb; background: white; color: #28443c; border-radius: 8px; padding: 7px 10px; font-weight: 650; cursor: pointer; }
-button.primary { background: #173f35; border-color: #173f35; color: white; }
-button.danger { color: #a13b32; margin-left: auto; }
-button.wide { width: 100%; padding: 9px 12px; margin-top: 7px; }
-button.link { border: 0; background: transparent; padding: 4px 0; font-size: 11px; text-decoration: underline; }
+.setup > p { margin: 7px 0 16px; }
+.account-row { color: #667085; font-size: 12px; margin-bottom: 15px; overflow-wrap: anywhere; }
+.divider { align-items: center; color: #98a2b3; display: flex; font-size: 10px; gap: 8px; margin: 15px 0; }
+.divider::before, .divider::after { background: #e8ebf0; content: ''; flex: 1; height: 1px; }
+label { color: #344054; display: block; font-size: 11px; font-weight: 700; margin: 9px 0 6px; }
+input { background: #fff; border: 1px solid #d0d5dd; border-radius: 9px; color: #172033; font: inherit; padding: 9px 10px; width: 100%; }
+input:focus { border-color: #818cf8; box-shadow: 0 0 0 3px #eef2ff; outline: 0; }
+.sync { align-items: flex-start; background: #f8faff; border-color: #dfe7ff; display: flex; gap: 12px; justify-content: space-between; }
+.sync.retrying { background: #fffbeb; border-color: #fde7a4; }
+.sync.error { background: #fff7f6; border-color: #ffd6d1; }
+.sync p { font-size: 11px; margin-bottom: 0; max-width: 225px; }
+.sync-actions { align-items: flex-end; display: flex; flex-direction: column; gap: 7px; white-space: nowrap; }
+.sync-actions a { color: #4f46e5; font-size: 12px; font-weight: 700; text-decoration: none; }
+article { position: relative; }
+article h2 { margin-top: 1px; }
+article > p:not(.source):not(.expiry) { margin-top: 5px; }
+.expiry { color: #a16207; font-size: 11px; font-weight: 600; }
+.actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
+button { background: #fff; border: 1px solid #d0d5dd; border-radius: 9px; color: #344054; cursor: pointer; font: inherit; font-size: 12px; font-weight: 650; padding: 8px 10px; }
+button:hover:not(:disabled) { background: #f8fafc; border-color: #aab4c3; }
+button.primary { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+button.primary:hover:not(:disabled) { background: #4338ca; border-color: #4338ca; }
+button.danger { color: #b42318; margin-left: auto; }
+button.wide { margin-top: 8px; padding: 10px 12px; width: 100%; }
+button.link { background: transparent; border: 0; font-size: 11px; padding: 4px 0; text-decoration: underline; }
 button:disabled { cursor: wait; opacity: .55; }
-.account-footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; color: #65746e; font-size: 11px; padding: 8px 2px; }
-.account-footer span { overflow: hidden; text-overflow: ellipsis; }
-.error { background: #fff0ee; border: 1px solid #e8bbb5; border-radius: 10px; padding: 10px; color: #8e2c24; font-size: 12px; }
-footer { text-align: center; font-size: 11px; color: #78857f; margin-top: 18px; }
+.empty { background: #fcfdff; border-style: dashed; padding: 22px 15px; text-align: center; }
+.empty p { margin-bottom: 0; }
+.account-footer { align-items: center; color: #667085; display: flex; font-size: 11px; gap: 10px; justify-content: space-between; padding: 9px 2px; }
+.account-footer span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.error { background: #fff4f2; border: 1px solid #ffd4cf; border-radius: 10px; color: #b42318; font-size: 12px; padding: 10px; }
+footer { color: #98a2b3; font-size: 10px; line-height: 1.45; margin: 17px 8px 0; text-align: center; }
