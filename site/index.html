@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="A private Chrome extension for tracking job applications in your own Google Sheet.">
+    <title>Job Application Tracker</title>
+    <style>
+      :root { color: #172033; background: #f6f8fc; font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; }
+      * { box-sizing: border-box; }
+      body { margin: 0; }
+      main { margin: 0 auto; max-width: 960px; padding: 32px 24px 72px; }
+      nav, .hero, .grid { display: flex; gap: 20px; justify-content: space-between; }
+      nav { align-items: center; border-bottom: 1px solid #e5e9f0; padding-bottom: 22px; }
+      .brand { align-items: center; display: flex; font-size: 15px; font-weight: 760; gap: 10px; }
+      .mark { align-items: center; background: #4f46e5; border-radius: 10px; color: white; display: inline-flex; font-size: 20px; height: 34px; justify-content: center; width: 34px; }
+      a { color: #4338ca; font-weight: 650; text-decoration: none; }
+      .hero { align-items: center; padding: 84px 0 64px; }
+      .hero > div { max-width: 610px; }
+      .eyebrow { color: #4f46e5; font-size: 12px; font-weight: 800; letter-spacing: .12em; margin: 0 0 14px; }
+      h1 { font-size: clamp(40px, 7vw, 68px); letter-spacing: -.065em; line-height: .98; margin: 0; }
+      .lead { color: #5f6b7a; font-size: 19px; line-height: 1.55; margin: 24px 0 0; max-width: 560px; }
+      .preview { background: #fff; border: 1px solid #e4e8ef; border-radius: 16px; box-shadow: 0 18px 44px rgb(15 23 42 / 8%); min-width: 260px; padding: 18px; }
+      .preview p { color: #667085; font-size: 11px; margin: 0 0 9px; }
+      .preview h2 { font-size: 16px; letter-spacing: -.025em; margin: 0 0 18px; }
+      .job { border-top: 1px solid #edf0f4; padding-top: 14px; }
+      .job strong { display: block; font-size: 13px; }
+      .job span { color: #667085; display: block; font-size: 11px; margin-top: 5px; }
+      .tag { background: #eef2ff; border-radius: 7px; color: #4338ca; display: inline-block; font-size: 10px; font-weight: 750; margin-top: 14px; padding: 6px 8px; }
+      .grid { align-items: stretch; flex-wrap: wrap; }
+      .grid section { background: #fff; border: 1px solid #e5e9f0; border-radius: 13px; flex: 1 1 220px; padding: 22px; }
+      h3 { font-size: 17px; letter-spacing: -.025em; margin: 0 0 8px; }
+      section p { color: #667085; font-size: 14px; line-height: 1.55; margin: 0; }
+      .privacy { border-top: 1px solid #e5e9f0; margin-top: 54px; padding-top: 32px; }
+      footer { color: #98a2b3; font-size: 12px; margin-top: 52px; }
+      @media (max-width: 720px) { .hero { align-items: flex-start; flex-direction: column; padding-top: 58px; } .preview { width: 100%; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <nav><div class="brand"><span class="mark">✓</span>Job Application Tracker</div><a href="privacy.html">Privacy</a></nav>
+      <section class="hero">
+        <div><p class="eyebrow">PRIVATE JOB SEARCH ORGANIZATION</p><h1>Keep the details.<br>Skip the spreadsheet work.</h1><p class="lead">Job Application Tracker saves job-page drafts locally and syncs only the applications or referral requests you confirm to your own Google Sheet.</p></div>
+        <aside class="preview" aria-label="Extension preview"><p>PRIVATE JOB TRACKER</p><h2>Applications</h2><div class="job"><strong>Systematic Graduate Rotational Quant</strong><span>Man Group · Boston, MA</span><span class="tag">LinkedIn · Draft saved</span></div></aside>
+      </section>
+      <div class="grid">
+        <section><h3>Capture once</h3><p>Open a supported job-detail page and keep a local, seven-day draft with its job description snapshot.</p></section>
+        <section><h3>Confirm deliberately</h3><p>The extension never fills or submits applications. You choose whether a job is applied to or needs a referral.</p></section>
+        <section><h3>Own your data</h3><p>Only confirmed records sync to the Google Sheet connected to your own Google account. There is no tracker-operated server.</p></section>
+      </div>
+      <section class="privacy"><h3>Privacy first</h3><p>Drafts remain on your device. Confirmed records can include the company, role, location, job URL, description snapshot, application or referral status, and notes. Read the <a href="privacy.html">Privacy Policy</a> for details.</p></section>
+      <footer>Job Application Tracker · Chrome extension beta</footer>
+    </main>
+  </body>
+</html>

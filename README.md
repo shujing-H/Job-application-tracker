@@ -55,3 +55,7 @@ The narrow scope can create a new sheet and reopen sheets previously authorized 
 - The extension observes; it never fills inputs or clicks submission controls.
 - No analytics, application backend, form access, broad browsing permission, or remote-hosted code is included.
 - Repository and development artifacts must remain private.
+
+## Release preparation
+
+The repository includes a public-facing [homepage](site/index.html), [privacy policy](site/privacy.html), [beta tester guide](docs/BETA_TESTER_GUIDE.md), and [release checklist](docs/RELEASE_CHECKLIST.md). They are staged for review only until a public domain, support contact, and production OAuth project are configured.
