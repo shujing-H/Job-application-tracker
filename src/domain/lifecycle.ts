@@ -16,6 +16,16 @@ export function canonicalizeJobUrl(rawUrl: string): string {
       url.search = '';
     }
   }
+  // 12twenty stores its posting route in the hash. Preserve only the stable
+  // numeric posting identity while removing view-state parameters.
+  if (url.hostname.endsWith('12twenty.com')) {
+    const postingId = url.hash.match(/^#\/jobPostings\/(\d+)/)?.[1];
+    if (postingId) {
+      url.search = '';
+      url.hash = `#/jobPostings/${postingId}`;
+      return url.toString();
+    }
+  }
   url.hash = '';
   for (const key of [...url.searchParams.keys()]) {
     if (key.startsWith('utm_') || ['trk', 'trackingId', 'ref', 'source'].includes(key)) {

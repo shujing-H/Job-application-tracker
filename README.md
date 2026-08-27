@@ -22,6 +22,7 @@ Job listings often disappear or change by the time an interview invitation arriv
 - Handshake
 - Workday
 - Greenhouse
+- 12twenty school career portals
 
 LinkedIn search-result pages are intentionally excluded because their changing page structure does not expose job details reliably enough. Open the dedicated job-detail page to create a draft.
 
@@ -51,7 +52,7 @@ The extension creates a spreadsheet named **Job Tracker** with an **Applications
 | Role | Job title |
 | Location | Listed location |
 | Applied Date | Confirmation date |
-| Source | LinkedIn, Handshake, Workday, or Greenhouse |
+| Source | LinkedIn, Handshake, Workday, Greenhouse, or 12twenty |
 | Status | `Applied` or `Referral requested` |
 | Current Status | Current stage of the application |
 | Referral | `Yes` or `No` |

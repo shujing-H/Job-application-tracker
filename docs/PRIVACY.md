@@ -50,7 +50,7 @@ This policy chooses privacy over cross-account recovery. Unsynced records are de
 | `notifications` | Grouped day-3/day-6 draft reminders |
 | `identity` | Chrome-native Google OAuth token flow |
 | `identity.email` | Stable account ID/email used to enforce the local account boundary |
-| Supported-site hosts | Run the extractor only on LinkedIn, Handshake, Workday, and Greenhouse job pages |
+| Supported-site hosts | Run the extractor only on LinkedIn, Handshake, Workday, Greenhouse, and 12twenty job pages |
 | `https://sheets.googleapis.com/*` | Create, validate, read, and append to the connected sheet |
 | OAuth `drive.file` | Access only sheets created/opened with this app; no arbitrary Drive browsing |
 

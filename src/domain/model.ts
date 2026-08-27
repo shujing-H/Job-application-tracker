@@ -24,7 +24,7 @@ export const CURRENT_STATUS_OPTIONS = [
   'Withdrawn',
 ] as const;
 
-export type JobSource = 'LinkedIn' | 'Handshake' | 'Workday' | 'Greenhouse';
+export type JobSource = 'LinkedIn' | 'Handshake' | 'Workday' | 'Greenhouse' | '12twenty';
 
 export interface CapturedJob {
   company: string;

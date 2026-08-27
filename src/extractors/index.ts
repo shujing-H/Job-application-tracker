@@ -37,6 +37,16 @@ const RULES: Array<{ host: RegExp; rules: Rules }> = [
       description: ['#content', '.job__description'],
     },
   },
+  {
+    host: /(^|\.)12twenty\.com$/,
+    rules: {
+      source: '12twenty',
+      company: ['.primary-sub-header a[href*="/Companies#/Companies/"]', '.primary-sub-header'],
+      role: ['h1.tt-entity-title-with-large-icons'],
+      location: [],
+      description: [],
+    },
+  },
 ];
 
 function clean(value: string | null | undefined): string {
@@ -84,6 +94,24 @@ function linkedInSemanticJob(): Pick<CapturedJob, 'company' | 'role' | 'location
   return { company, role: header.role, location: header.location, jdSnapshot };
 }
 
+function twelveTwentySemanticJob(): Pick<CapturedJob, 'company' | 'role' | 'location' | 'jdSnapshot'> | undefined {
+  // 12twenty is an Angular single-page app. Limit capture to a concrete
+  // posting route so the search/home pages cannot be mistaken for one job.
+  if (!/^#\/jobPostings\/\d+(?:\?.*)?$/.test(location.hash)) return undefined;
+  const role = clean(document.querySelector('h1.tt-entity-title-with-large-icons')?.textContent);
+  const company = clean(document.querySelector('.primary-sub-header a[href*="/Companies#/Companies/"]')?.textContent
+    ?? document.querySelector('.primary-sub-header')?.textContent);
+  const locationContainer = [...document.querySelectorAll<HTMLElement>('.header-main .sub-header')]
+    .find((element) => element.querySelector('.fa-map-marker-alt'));
+  const locationText = clean(locationContainer?.textContent);
+  const descriptionHeading = [...document.querySelectorAll('h3')]
+    .find((heading) => clean(heading.textContent).toLowerCase() === 'job description');
+  const description = descriptionHeading?.parentElement?.querySelector<HTMLElement>('.rich-text-display');
+  const jdSnapshot = clean(description?.innerText ?? description?.textContent);
+  if (!role || jdSnapshot.length < 80) return undefined;
+  return { company, role, location: locationText, jdSnapshot };
+}
+
 export function extractJob(): CapturedJob | undefined {
   const match = RULES.find(({ host }) => host.test(location.hostname));
   if (!match) return undefined;
@@ -92,11 +120,12 @@ export function extractJob(): CapturedJob | undefined {
   // split-pane DOM has a similarly reliable, isolated semantic boundary.
   if (match.rules.source === 'LinkedIn' && location.pathname === '/jobs/search-results/') return undefined;
   const linkedInSemantic = match.rules.source === 'LinkedIn' ? linkedInSemanticJob() : undefined;
-  let company = text(match.rules.company) || linkedInSemantic?.company || '';
+  const twelveTwentySemantic = match.rules.source === '12twenty' ? twelveTwentySemanticJob() : undefined;
+  let company = text(match.rules.company) || linkedInSemantic?.company || twelveTwentySemantic?.company || '';
   if (match.rules.source === 'Greenhouse') company = company.replace(/\s+Logo$/i, '');
-  const role = text(match.rules.role) || linkedInSemantic?.role || '';
-  const locationText = text(match.rules.location) || linkedInSemantic?.location || '';
-  const jdSnapshot = text(match.rules.description) || linkedInSemantic?.jdSnapshot || '';
+  const role = text(match.rules.role) || linkedInSemantic?.role || twelveTwentySemantic?.role || '';
+  const locationText = text(match.rules.location) || linkedInSemantic?.location || twelveTwentySemantic?.location || '';
+  const jdSnapshot = text(match.rules.description) || linkedInSemantic?.jdSnapshot || twelveTwentySemantic?.jdSnapshot || '';
   if (!role || jdSnapshot.length < 80) return undefined;
   return {
     company,

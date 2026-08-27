@@ -38,3 +38,15 @@ describe('draft lifecycle', () => {
     });
   });
 });
+
+describe('12twenty URL identity', () => {
+  it('preserves the posting ID while removing institution view parameters', () => {
+    expect(canonicalizeJobUrl('https://school.12twenty.com/jobPostings#/jobPostings/35006705580910?p=false'))
+      .toBe('https://school.12twenty.com/jobPostings#/jobPostings/35006705580910');
+  });
+
+  it('keeps different 12twenty postings distinct', () => {
+    expect(canonicalizeJobUrl('https://school.12twenty.com/jobPostings#/jobPostings/101?p=false'))
+      .not.toBe(canonicalizeJobUrl('https://school.12twenty.com/jobPostings#/jobPostings/202?p=false'));
+  });
+});

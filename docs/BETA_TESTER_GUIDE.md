@@ -11,7 +11,7 @@ Thank you for testing Job Application Tracker. The extension records job details
 
 ## Test flow
 
-1. Open a job-detail page on LinkedIn, Handshake, Workday, or Greenhouse.
+1. Open a job-detail page on LinkedIn, Handshake, Workday, Greenhouse, or a 12twenty school career portal.
 2. Open the extension and check that the company, role, location, and source look right.
 3. For a normal application, choose **I applied**. For a networking-first opportunity, choose **Request referral**.
 4. Open the connected Google Sheet and verify that exactly one row appears.
