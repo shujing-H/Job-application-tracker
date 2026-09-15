@@ -21,7 +21,7 @@ const RULES: Array<{ host: RegExp; rules: Rules }> = [
   },
   {
     host: /(^|\.)joinhandshake\.com$/,
-    rules: { source: 'Handshake', company: ['[data-hook="employer-name"]', 'main a[href*="employers"]'], role: ['h1'], location: ['[data-hook="job-location"]'], description: ['[data-hook="job-description"]', 'main'] },
+    rules: { source: 'Handshake', company: ['[data-hook="employer-name"]', 'a[href^="/e/"]', 'main a[href*="employers"]'], role: ['h1'], location: ['[data-hook="job-location"]'], description: ['[data-hook="job-description"]', 'main'] },
   },
   {
     host: /\.myworkdayjobs\.com$/,
@@ -76,6 +76,10 @@ export function parseLinkedInSemanticHeader(paragraphs: string[], company: strin
   return { role, location: locationSummary.split(/\s+[·•]\s+/)[0] ?? '' };
 }
 
+export function isHandshakeJobDetailPath(pathname: string): boolean {
+  return /^\/jobs\/\d+\/?$/.test(pathname);
+}
+
 function linkedInSemanticJob(): Pick<CapturedJob, 'company' | 'role' | 'location' | 'jdSnapshot'> | undefined {
   const root = document.querySelector<HTMLElement>('[aria-label="Primary content"]');
   if (!root) return undefined;
@@ -119,6 +123,7 @@ export function extractJob(): CapturedJob | undefined {
   // previous selection. Capture only the dedicated detail route until the
   // split-pane DOM has a similarly reliable, isolated semantic boundary.
   if (match.rules.source === 'LinkedIn' && location.pathname === '/jobs/search-results/') return undefined;
+  if (match.rules.source === 'Handshake' && !isHandshakeJobDetailPath(location.pathname)) return undefined;
   const linkedInSemantic = match.rules.source === 'LinkedIn' ? linkedInSemanticJob() : undefined;
   const twelveTwentySemantic = match.rules.source === '12twenty' ? twelveTwentySemanticJob() : undefined;
   let company = text(match.rules.company) || linkedInSemantic?.company || twelveTwentySemantic?.company || '';

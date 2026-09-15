@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseLinkedInSemanticHeader } from './index';
+import { isHandshakeJobDetailPath, parseLinkedInSemanticHeader } from './index';
 
 describe('LinkedIn semantic extractor fallback', () => {
   it('reads the current LinkedIn title and trims activity text from the location', () => {
@@ -16,5 +16,14 @@ describe('LinkedIn semantic extractor fallback', () => {
   it('fails closed when the company header cannot be correlated', () => {
     expect(parseLinkedInSemanticHeader(['Unrelated text', 'Another paragraph'], 'Man Group'))
       .toEqual({ role: '', location: '' });
+  });
+});
+
+describe('Handshake capture boundary', () => {
+  it('captures only a concrete numeric job-detail route', () => {
+    expect(isHandshakeJobDetailPath('/jobs/11412156')).toBe(true);
+    expect(isHandshakeJobDetailPath('/jobs/11412156/')).toBe(true);
+    expect(isHandshakeJobDetailPath('/job-search')).toBe(false);
+    expect(isHandshakeJobDetailPath('/jobs')).toBe(false);
   });
 });
